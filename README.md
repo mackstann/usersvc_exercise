@@ -10,6 +10,95 @@ This project uses Python 3, so be careful not to accidentally use Python 2 if yo
     pip install -r requirements.txt
     FLASK_APP=usersvc.py flask run
 
+## Run the test suite
+
+```
+% pytest -vv
+===================================================== test session starts =====================================================
+platform linux -- Python 3.6.5, pytest-5.3.1, py-1.8.0, pluggy-0.13.1 -- /home/vagrant/usersvc_exercise/env/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/vagrant/usersvc_exercise
+plugins: cov-2.8.1
+collected 10 items
+
+test_usersvc.py::test_list_empty_db PASSED                                                                              [ 10%]
+test_usersvc.py::test_get_nonexistent PASSED                                                                            [ 20%]
+test_usersvc.py::test_patch_nonexistent PASSED                                                                          [ 30%]
+test_usersvc.py::test_delete_nonexistent PASSED                                                                         [ 40%]
+test_usersvc.py::test_post PASSED                                                                                       [ 50%]
+test_usersvc.py::test_get PASSED                                                                                        [ 60%]
+test_usersvc.py::test_patch PASSED                                                                                      [ 70%]
+test_usersvc.py::test_delete PASSED                                                                                     [ 80%]
+test_usersvc.py::test_post_invalid PASSED                                                                               [ 90%]
+test_usersvc.py::test_patch_invalid PASSED                                                                              [100%]
+
+===================================================== 10 passed in 0.25s ======================================================
+
+```
+
+## Run the coverage report
+
+```
+% pytest --cov=usersvc test_usersvc.py
+===================================================== test session starts =====================================================
+platform linux -- Python 3.6.5, pytest-5.3.1, py-1.8.0, pluggy-0.13.1
+rootdir: /home/vagrant/usersvc_exercise
+plugins: cov-2.8.1
+collected 10 items
+
+test_usersvc.py ..........                                                                                              [100%]
+
+----------- coverage: platform linux, python 3.6.5-final-0 -----------
+Name         Stmts   Miss  Cover
+--------------------------------
+usersvc.py     113      3    97%
+
+
+===================================================== 10 passed in 0.35s ======================================================
+```
+
+## HTTP Usage Demo
+
+```
+curl -X "POST" "http://localhost:5000/users" -H "Content-Type: application/json" -d '{"firstname":"The","lastname":"Doctor","zipcode":"97204","email":"x@b.com"}'
+{
+  "email": "x@b.com",
+  "firstname": "The",
+  "id": "7d79020d-1b07-4baa-858a-28bfe1cc1e25",
+  "lastname": "Doctor",
+  "zipcode": "97204"
+}
+
+% curl -X "GET" "http://localhost:5000/users/7d79020d-1b07-4baa-858a-28bfe1cc1e25"
+{
+  "email": "x@b.com",
+  "firstname": "The",
+  "id": "7d79020d-1b07-4baa-858a-28bfe1cc1e25",
+  "lastname": "Doctor",
+  "zipcode": "97204"
+}
+
+% curl -X "PATCH" "http://localhost:5000/users/7d79020d-1b07-4baa-858a-28bfe1cc1e25" -H "Content-Type: application/json" -d '{"firstname":"Da"}'
+% curl -X "GET" "http://localhost:5000/users/7d79020d-1b07-4baa-858a-28bfe1cc1e25"
+{
+  "email": "x@b.com",
+  "firstname": "Da",
+  "id": "7d79020d-1b07-4baa-858a-28bfe1cc1e25",
+  "lastname": "Doctor",
+  "zipcode": "97204"
+}
+
+% curl -X "DELETE" "http://localhost:5000/users/7d79020d-1b07-4baa-858a-28bfe1cc1e25"
+% curl -X "GET" "http://localhost:5000/users/7d79020d-1b07-4baa-858a-28bfe1cc1e25"
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+
+```
+
+(That 404 should ideally return a JSON body, not HTML.)
+
 # Features
 
 * A User rest Resource that allows clients to create, read, update, delete a user or a list of users.
