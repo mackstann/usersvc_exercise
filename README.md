@@ -43,6 +43,13 @@ Normally I might've used something like the `flask_restplus` package, which help
 validation and documentation generation, but I haven't used it before, so I stuck with vanilla Flask just to avoid
 dragging out this exercise too much.
 
+The tests are very barebones pytest tests. I've been writing Cucumber/Gherkin tests for a while, so I found it helpful
+(at least to me) to throw some Gherkin in comments to help organize and explain what's going on. It'd probably be nicer
+to use a real Python BDD library.
+
+In a real project, I would also try to separate the code into layers to better separate concerns, e.g. a business logic
+layer, a storage layer, an HTTP layer, etc.
+
 # Notes/Thoughts
 
 In a real user service, security and privacy would be top concerns, and would impact the design:

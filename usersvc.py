@@ -24,6 +24,9 @@ class User:
 
 db = {}
 
+def reset_db():
+    db.clear()
+
 def debug_print_db(db):
     print("----- Database dump -----")
     print("{} users:".format(len(db)))
@@ -35,6 +38,9 @@ def debug_print_db(db):
 
 class ValidationError(ValueError):
     pass
+
+def error(msg):
+    return {'error': msg}
 
 reasonable_length = 50
 
@@ -51,15 +57,14 @@ def validate_user(form):
         raise ValidationError("lastname too long")
 
     zipcode = form.get('zipcode')
-    if zipcode:
-        if not zip_pattern.match(zipcode):
-            raise ValidationError("zipcode must be formatted as either NNNNN or NNNNN-NNNN")
+    if zipcode and not zip_pattern.match(zipcode):
+        raise ValidationError("zipcode must be formatted as either NNNNN or NNNNN-NNNN")
 
     email = form.get('email', '')
     if len(email) > reasonable_length:
         raise ValidationError("email too long")
     print(email)
-    if not email_pattern.match(email):
+    if email and not email_pattern.match(email):
         raise ValidationError("invalid email")
 
 ### Route handlers
@@ -73,18 +78,18 @@ def get_user(id):
 
 @app.route("/users", methods=["GET"])
 def list_users():
-    return jsonify(u.to_dict() for u in db.values())
+    return jsonify([ u.to_dict() for u in db.values() ])
 
 @app.route("/users", methods=["POST"])
 def create_user():
     if not request.is_json:
-        return 'Request Content-Type must be application/json', 400
+        return jsonify(error('Request Content-Type must be application/json')), 400
 
     form = request.get_json()
     try:
         validate_user(form)
     except ValidationError as e:
-        return str(e), 400
+        return jsonify(error(str(e))), 400
 
     user = User(
         id=str(uuid.uuid4()),
@@ -108,20 +113,20 @@ def update_user(id):
         return abort(404)
 
     if not request.is_json:
-        return 'Request Content-Type must be application/json', 400
+        return jsonify(error('Request Content-Type must be application/json')), 400
     form = request.get_json()
 
     try:
         validate_user(form)
     except ValidationError as e:
-        return str(e), 400
+        return jsonify(error(str(e))), 400
 
     def maybe_update_field(user, form, attr):
         # this eliminates some repetition, but in the real world this might lead to undesirable coupling between the
         # attribute names exposed in the API and the attribute names in the model implementation -- they wouldn't always
         # necessarily be the same.
         if attr in form and form[attr] != getattr(user, attr):
-            setattr(user, attr, request.form[attr])
+            setattr(user, attr, form[attr])
 
     maybe_update_field(user, form, 'firstname')
     maybe_update_field(user, form, 'lastname')
@@ -129,6 +134,7 @@ def update_user(id):
     maybe_update_field(user, form, 'email')
 
     db[id] = user
+    debug_print_db(db)
 
     return '', 204 # HTTP 204 No Content. Returning 200 with a body would also be valid.
 
@@ -138,4 +144,5 @@ def delete_user(id):
         del db[id]
     except KeyError:
         return abort(404)
+    debug_print_db(db)
     return '', 204
