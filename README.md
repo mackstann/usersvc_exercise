@@ -60,3 +60,4 @@ In a real user service, security and privacy would be top concerns, and would im
 * Authentication and Authorization would be important, to ensure that not just anyone can go snooping on other users'
   information, or tampering with data.
 * More robust input validation would be a good thing.
+* Logging things like email addresses also requires some care.

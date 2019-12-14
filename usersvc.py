@@ -1,9 +1,17 @@
-import re, uuid
+import re, uuid, logging
 
 from flask import Flask, request, abort, url_for
 from flask.json import jsonify
 
+import structlog
+from structlog.stdlib import LoggerFactory
+
+logging.basicConfig()
+structlog.configure(logger_factory=LoggerFactory())
+logger = structlog.get_logger()
+
 app = Flask(__name__)
+
 
 ### Model and persistence
 
@@ -71,17 +79,28 @@ def validate_user(form):
 
 @app.route("/users/<id>", methods=["GET"])
 def get_user(id):
+    log = logger.new(request_id=str(uuid.uuid4()))
+
     try:
-        return jsonify(db[id].to_dict())
+        user = db[id]
     except KeyError:
         return abort(404)
 
+    log.info(event="fetched user", user_id=id)
+    return jsonify(user.to_dict())
+
 @app.route("/users", methods=["GET"])
 def list_users():
-    return jsonify([ u.to_dict() for u in db.values() ])
+    log = logger.new(request_id=str(uuid.uuid4()))
+
+    users = [ u.to_dict() for u in db.values() ]
+    log.info(event="fetched users", num_users=len(users))
+    return jsonify(users)
 
 @app.route("/users", methods=["POST"])
 def create_user():
+    log = logger.new(request_id=str(uuid.uuid4()))
+
     if not request.is_json:
         return jsonify(error('Request Content-Type must be application/json')), 400
 
@@ -89,6 +108,7 @@ def create_user():
     try:
         validate_user(form)
     except ValidationError as e:
+        log.info(event="create user failed", input=form)
         return jsonify(error(str(e))), 400
 
     user = User(
@@ -99,6 +119,8 @@ def create_user():
         email=form.get('email', ''),
     )
     db[user.id] = user
+    # TODO: consider ramifications of logging personal info
+    log.info(event="created user", input=form)
     debug_print_db(db)
 
     # typical HTTP 201 Created response
@@ -107,6 +129,8 @@ def create_user():
 
 @app.route("/users/<id>", methods=["PATCH"])
 def update_user(id):
+    log = logger.new(request_id=str(uuid.uuid4()))
+
     try:
         user = db[id]
     except KeyError:
@@ -128,11 +152,14 @@ def update_user(id):
         if attr in form and form[attr] != getattr(user, attr):
             setattr(user, attr, form[attr])
 
+    user_before = user.to_dict()
     maybe_update_field(user, form, 'firstname')
     maybe_update_field(user, form, 'lastname')
     maybe_update_field(user, form, 'zipcode')
     maybe_update_field(user, form, 'email')
 
+    # TODO: consider ramifications of logging personal info
+    log.info(event="updated user", before=user_before, after=user.to_dict())
     db[id] = user
     debug_print_db(db)
 
@@ -140,9 +167,13 @@ def update_user(id):
 
 @app.route("/users/<id>", methods=["DELETE"])
 def delete_user(id):
+    log = logger.new(request_id=str(uuid.uuid4()))
+
     try:
         del db[id]
     except KeyError:
         return abort(404)
+
+    log.info(event="deleted user", id=id)
     debug_print_db(db)
     return '', 204
