@@ -9,6 +9,8 @@ MarkupSafe==1.1.1
 more-itertools==8.0.2
 packaging==19.2
 pluggy==0.13.1
+prometheus-client==0.7.1
+prometheus-flask-exporter==0.12.1
 py==1.8.0
 pyparsing==2.4.5
 pytest==5.3.1

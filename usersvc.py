@@ -6,12 +6,14 @@ from flask.json import jsonify
 import structlog
 from structlog.stdlib import LoggerFactory
 
+from prometheus_flask_exporter import PrometheusMetrics
+
 logging.basicConfig()
 structlog.configure(logger_factory=LoggerFactory())
 logger = structlog.get_logger()
 
 app = Flask(__name__)
-
+metrics = PrometheusMetrics(app)
 
 ### Model and persistence
 
